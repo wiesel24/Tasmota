@@ -11,16 +11,17 @@
  *  Created on: Jul 1, 2017
  *      Author: kolban
  */
+#include "sdkconfig.h"
+#if defined(CONFIG_BT_ENABLED)
 
 #include "nimconfig.h"
-#if defined(CONFIG_BT_ENABLED) && defined(CONFIG_BT_NIMBLE_ROLE_OBSERVER)
+#if defined(CONFIG_BT_NIMBLE_ROLE_OBSERVER)
 
 #include "NimBLEScan.h"
 #include "NimBLEDevice.h"
 #include "NimBLELog.h"
 
 #include <string>
-#include <climits>
 
 static const char* LOG_TAG = "NimBLEScan";
 
@@ -283,7 +284,7 @@ bool NimBLEScan::isScanning() {
  * @return True if scan started or false if there was an error.
  */
 bool NimBLEScan::start(uint32_t duration, void (*scanCompleteCB)(NimBLEScanResults), bool is_continue) {
-    NIMBLE_LOGD(LOG_TAG, ">> start: duration=%" PRIu32, duration);
+    NIMBLE_LOGD(LOG_TAG, ">> start(duration=%d)", duration);
 
     // Save the callback to be invoked when the scan completes.
     m_scanCompleteCB = scanCompleteCB;
@@ -538,4 +539,5 @@ NimBLEAdvertisedDevice *NimBLEScanResults::getDevice(const NimBLEAddress &addres
     return nullptr;
 }
 
-#endif /* CONFIG_BT_ENABLED && CONFIG_BT_NIMBLE_ROLE_OBSERVER */
+#endif // #if defined(CONFIG_BT_NIMBLE_ROLE_OBSERVER)
+#endif /* CONFIG_BT_ENABLED */
