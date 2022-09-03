@@ -11,16 +11,16 @@
  *  Created on: Jul 8, 2017
  *      Author: kolban
  */
-#include "sdkconfig.h"
-#if defined(CONFIG_BT_ENABLED)
 
 #include "nimconfig.h"
-#if defined( CONFIG_BT_NIMBLE_ROLE_CENTRAL)
+#if defined(CONFIG_BT_ENABLED) && defined(CONFIG_BT_NIMBLE_ROLE_CENTRAL)
 
 #include "NimBLERemoteService.h"
 #include "NimBLEUtils.h"
 #include "NimBLEDevice.h"
 #include "NimBLELog.h"
+
+#include <climits>
 
 static const char* LOG_TAG = "NimBLERemoteService";
 
@@ -116,11 +116,7 @@ NimBLERemoteCharacteristic* NimBLERemoteService::getCharacteristic(const NimBLEU
         {
             NimBLEUUID uuid128(uuid);
             uuid128.to128();
-            if (retrieveCharacteristics(&uuid128)) {
-                if(m_characteristicVector.size() > prev_size) {
-                    return m_characteristicVector.back();
-                }
-            }
+            return getCharacteristic(uuid128);
         } else {
             // If the request was successful but the 128 bit uuid not found
             // try again with the 16 bit uuid.
@@ -128,11 +124,7 @@ NimBLERemoteCharacteristic* NimBLERemoteService::getCharacteristic(const NimBLEU
             uuid16.to16();
             // if the uuid was 128 bit but not of the BLE base type this check will fail
             if (uuid16.bitSize() == BLE_UUID_TYPE_16) {
-                if(retrieveCharacteristics(&uuid16)) {
-                    if(m_characteristicVector.size() > prev_size) {
-                        return m_characteristicVector.back();
-                    }
-                }
+                return getCharacteristic(uuid16);
             }
         }
     }
@@ -256,9 +248,7 @@ bool NimBLERemoteService::retrieveCharacteristics(const NimBLEUUID *uuid_filter)
                 }
             }
 
-            if (m_characteristicVector.size() > 0) {
-                m_characteristicVector.back()->m_endHandle = getEndHandle();
-            }
+            m_characteristicVector.back()->m_endHandle = getEndHandle();
         }
 
         NIMBLE_LOGD(LOG_TAG, "<< retrieveCharacteristics()");
@@ -410,6 +400,4 @@ std::string NimBLERemoteService::toString() {
     return res;
 } // toString
 
-
-#endif // #if defined( CONFIG_BT_NIMBLE_ROLE_CENTRAL)
-#endif /* CONFIG_BT_ENABLED */
+#endif /* CONFIG_BT_ENABLED && CONFIG_BT_NIMBLE_ROLE_CENTRAL */
