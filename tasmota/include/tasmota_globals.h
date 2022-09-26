@@ -107,11 +107,6 @@ String EthernetMacAddress(void);
 
 #if CONFIG_IDF_TARGET_ESP32
 
-#ifdef CORE32SOLO1
-#ifdef USE_ETHERNET
-#undef USE_ETHERNET                                // ESP32-Solo1 does not support ethernet
-#endif
-#endif  // CORE32SOLO1
 
 #else   // Disable features not present in other ESP32 like ESP32C3, ESP32S2, ESP32S3 etc.
 #ifdef USE_ETHERNET
@@ -287,6 +282,9 @@ String EthernetMacAddress(void);
 #endif
 #ifndef MQTT_CLEAN_SESSION
 #define MQTT_CLEAN_SESSION          1          // 0 = No clean session, 1 = Clean session (default)
+#endif
+#ifndef MQTT_DISABLE_SSERIALRECEIVED        
+#define MQTT_DISABLE_SSERIALRECEIVED 0         // 1 = Disable sserialreceived mqtt messages, 0 = Enable sserialreceived mqtt messages (default)
 #endif
 #ifndef MQTT_LWT_OFFLINE
 #define MQTT_LWT_OFFLINE            "Offline"  // MQTT LWT offline topic message

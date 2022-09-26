@@ -219,18 +219,20 @@ void zigbeeZCLSendCmd(class ZCLFrame &zcl) {
 
 // Definitive doc for Tuya protocol:
 // https://developer.tuya.com/en/docs/iot-device-dev/tuya-zigbee-universal-docking-access-standard?id=K9ik6zvofpzql#subtitle-6-Private%20cluster
-// Special encoding for multiplier:
+
+// Special encoding for multiplier when sending writes or reportable attributes,
+// I.e. multipliers and dividers are inversed
 // multiplier == 0: ignore
 // multiplier == 1: ignore
-void ZbApplyMultiplier(double &val_d, int8_t multiplier, int8_t divider, int8_t base) {
+void ZbApplyMultiplierForWrites(double &val_d, int8_t multiplier, int8_t divider, int8_t base) {
+  if (0 != base) {
+    val_d = val_d - base;
+  }
   if ((0 != multiplier) && (1 != multiplier)) {
-    val_d = val_d * multiplier;
+    val_d = val_d / multiplier;
   }
   if ((0 != divider) && (1 != divider)) {
-    val_d = val_d / divider;
-  }
-  if (0 != base) {
-    val_d = val_d + base;
+    val_d = val_d * divider;
   }
 }
 
@@ -243,7 +245,7 @@ bool ZbTuyaWrite(SBuffer & buf, const Z_attribute & attr) {
 
   if (attr.key_is_str || attr.key_is_cmd) { return false; }    // couldn't find attr if so skip
   if (attr.isNum()) {
-    ZbApplyMultiplier(val_d, attr.attr_multiplier, attr.attr_divider, 0);
+    ZbApplyMultiplierForWrites(val_d, attr.attr_multiplier, attr.attr_divider, 0);
   }
   uint32_t u32 = val_d;
   int32_t  i32 = val_d;
@@ -302,7 +304,7 @@ bool ZbAppendWriteBuf(SBuffer & buf, const Z_attribute & attr, bool prepend_stat
 
   if (attr.key_is_str && attr.key_is_cmd) { return false; }    // couldn't find attr if so skip
   if (attr.isNum()) {
-    ZbApplyMultiplier(val_d, attr.attr_multiplier, attr.attr_divider, 0);
+    ZbApplyMultiplierForWrites(val_d, attr.attr_multiplier, attr.attr_divider, 0);
   }
 
   // push the value in the buffer
@@ -419,9 +421,14 @@ void ZbSendReportWrite(class JsonParserToken val_pubwrite, class ZCLFrame & zcl)
       // read ReportableChange
       JsonParserToken val_attr_rc = attr_config[PSTR("ReportableChange")];
       if (val_attr_rc) {
-        val_d = val_attr_rc.getFloat();
+        // If value is `null` then we send 0xFFFF for invalid value
         val_str = val_attr_rc.getStr();
-        ZbApplyMultiplier(val_d, attr.attr_multiplier, attr.attr_divider, 0);
+        if (!val_attr_rc.isNull()) {
+          val_d = val_attr_rc.getFloat();
+          ZbApplyMultiplierForWrites(val_d, attr.attr_multiplier, attr.attr_divider, 0);
+        } else {
+          val_d = NAN;
+        }
       }
 
       // read TimeoutPeriod
@@ -549,6 +556,11 @@ void ZbSendSend(class JsonParserToken val_cmd, ZCLFrame & zcl) {
     // Now parse the string to extract cluster, command, and payload
     // Parse 'cmd' in the form "AAAA_BB/CCCCCCCC" or "AAAA!BB/CCCCCCCC"
     // where AAAA is the cluster number, BB the command number, CCCC... the payload
+    // Possible delimiters:
+    //   "AAAA_BB/...": general cluster, sent to device (direction == 0)
+    //   "AAAA^BB/...": general cluster, recevied from device (direction == 1)
+    //   "AAAA!BB/...": cluster specific, sent to device (direction == 0)
+    //   "AAAA?BB/...": cluster specific, recevied from device (direction == 1)
     // First delimiter is '_' for a global command, or '!' for a cluster specific command
     const char * data = val_cmd.getStr();
     uint16_t local_cluster_id = parseHex(&data, 4);
@@ -562,8 +574,9 @@ void ZbSendSend(class JsonParserToken val_cmd, ZCLFrame & zcl) {
     }
 
     // delimiter
-    if (('_' == *data) || ('!' == *data)) {
-      if ('_' == *data) { zcl.clusterSpecific = false; }
+    if (('_' == *data) || ('^' == *data) || ('!' == *data) || ('?' == *data)) {
+      if ('_' == *data || '^' == *data) { zcl.clusterSpecific = false; }
+      if ('^' == *data || '?' == *data) { zcl.direction = true; }
       data++;
     } else {
       ResponseCmndChar_P(PSTR(D_ZIGBEE_WRONG_DELIMITER));
@@ -1078,13 +1091,13 @@ void ZigbeeMapAllDevices(void) {
 //
 void CmndZbMap(void) {
   if (zigbee.init_phase) { ResponseCmndChar_P(PSTR(D_ZIGBEE_NOT_STARTED)); return; }
-  RemoveSpace(XdrvMailbox.data);
+  TrimSpace(XdrvMailbox.data);
 
   if (strlen(XdrvMailbox.data) == 0) {
     ZigbeeMapAllDevices();
     ResponseCmndDone();
   } else {
-  CmndZbBindState_or_Map(true);
+    CmndZbBindState_or_Map(true);
   }
 }
 
@@ -1288,7 +1301,7 @@ void CmndZbInfo_inner(const Z_Device & device) {
 }
 void CmndZbInfo(void) {
   if (zigbee.init_phase) { ResponseCmndChar_P(PSTR(D_ZIGBEE_NOT_STARTED)); return; }
-  RemoveSpace(XdrvMailbox.data);
+  TrimSpace(XdrvMailbox.data);
 
   if (strlen(XdrvMailbox.data) == 0) {
     // if empty, dump for all values
@@ -1339,7 +1352,7 @@ void CmndZbSave(void) {
 //
 void CmndZbLoad(void) {
   // can be called before Zigbee is initialized
-  RemoveSpace(XdrvMailbox.data);
+  TrimSpace(XdrvMailbox.data);
   
   bool ret = true;;
   if (strcmp(XdrvMailbox.data, "*") == 0) {
@@ -1360,7 +1373,7 @@ void CmndZbLoad(void) {
 //
 void CmndZbUnload(void) {
   // can be called before Zigbee is initialized
-  RemoveSpace(XdrvMailbox.data);
+  TrimSpace(XdrvMailbox.data);
   
   bool ret = ZbUnload(XdrvMailbox.data);
   if (ret) {
@@ -1453,7 +1466,7 @@ void CmndZbcie(void) {
 //   ZbRestore {"Device":"0x5ADF","Name":"Petite_Lampe","IEEEAddr":"0x90FD9FFFFE03B051","ModelId":"TRADFRI bulb E27 WS opal 980lm","Manufacturer":"IKEA of Sweden","Endpoints":["0x01","0xF2"]}
 void CmndZbRestore(void) {
   if (zigbee.init_phase) { ResponseCmndChar_P(PSTR(D_ZIGBEE_NOT_STARTED)); return; }
-  RemoveSpace(XdrvMailbox.data);
+  TrimSpace(XdrvMailbox.data);
 
   if (strlen(XdrvMailbox.data) == 0) {
     // if empty, log values for all devices
@@ -1690,7 +1703,7 @@ void CmndZbStatus(void) {
 //
 void CmndZbData(void) {
   if (zigbee.init_phase) { ResponseCmndChar_P(PSTR(D_ZIGBEE_NOT_STARTED)); return; }
-  RemoveSpace(XdrvMailbox.data);
+  TrimSpace(XdrvMailbox.data);
 
   if (strlen(XdrvMailbox.data) == 0) {
     // if empty, log values for all devices
@@ -1735,7 +1748,7 @@ void CmndZbConfig(void) {
   int8_t      zb_txradio_dbm = Settings->zb_txradio_dbm;
 
   // if (zigbee.init_phase) { ResponseCmndChar_P(PSTR(D_ZIGBEE_NOT_STARTED)); return; }
-  RemoveSpace(XdrvMailbox.data);
+  TrimSpace(XdrvMailbox.data);
   if (strlen(XdrvMailbox.data) > 0) {
     JsonParser parser(XdrvMailbox.data);
     JsonParserObject root = parser.getRootObject();
@@ -2077,7 +2090,14 @@ const char HTTP_ZB_VERSION[] PROGMEM =
 const char HTTP_BTN_ZB_BUTTONS[] PROGMEM =
   "<button onclick='la(\"&zbj=1\");'>" D_ZIGBEE_PERMITJOIN "</button>"
   "<p></p>"
-  "<form action='zbm' method='get'><button>" D_ZIGBEE_MAP "</button></form>";
+  "<a href='zbm'><button>" D_ZIGBEE_MAP "</button></a>"
+  "<p></p>";
+
+const char HTTP_BTN_ZB_BUTTONS_DISABLED[] PROGMEM =
+  "<button style='background-color:#%06X' disabled>" D_ZIGBEE_PERMITJOIN "</button>"
+  "<p></p>"
+  "<button style='background-color:#%06X' disabled>" D_ZIGBEE_MAP "</button>"
+  "<p></p>";
 
 void ZigbeeShow(bool json)
 {
@@ -2253,10 +2273,12 @@ void ZigbeeShow(bool json)
           if (plug_voltage || plug_power) {
             WSContentSend_P(PSTR(" &#9889; "));
             if (plug_voltage) {
-              WSContentSend_P(PSTR(" %dV"), plug.getMainsVoltage());
+              float mains_voltage = plug.getMainsVoltage();
+              WSContentSend_P(PSTR(" %-1_fV"), &mains_voltage);
             }
             if (plug_power) {
-              WSContentSend_P(PSTR(" %dW"), plug.getMainsPower());
+              float mains_power = plug.getMainsPower();
+              WSContentSend_P(PSTR(" %-1_fW"), &mains_power);
             }
           }
           WSContentSend_P(PSTR("{e}"));
@@ -2275,6 +2297,10 @@ void ZigbeeShow(bool json)
       WSContentSend_P(HTTP_ZB_VERSION,
                       zigbee.major_rel, zigbee.minor_rel,
                       zigbee.maint_rel, zigbee.revision);
+      WSContentSend_P(HTTP_BTN_ZB_BUTTONS);
+    } else {
+      uint32_t grey = WebColor(COL_FORM);
+      WSContentSend_P(HTTP_BTN_ZB_BUTTONS_DISABLED, grey, grey);
     }
 #endif
   }
@@ -2365,9 +2391,6 @@ bool Xdrv23(uint8_t function) {
 #endif  // USE_ZIGBEE_EZSP
         WebServer_on(PSTR("/zbm"), ZigbeeShowMap, HTTP_GET);     // add web handler for Zigbee map
         WebServer_on(PSTR("/zbr"), ZigbeeMapRefresh, HTTP_GET);     // add web handler for Zigbee map refresh
-        break;
-      case FUNC_WEB_ADD_MAIN_BUTTON:
-        WSContentSend_P(HTTP_BTN_ZB_BUTTONS);
         break;
 #endif  // USE_WEBSERVER
       case FUNC_PRE_INIT:

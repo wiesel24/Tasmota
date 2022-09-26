@@ -559,26 +559,32 @@ const Z_AttributeConverter Z_PostProcess[] PROGMEM = {
   //{ Zmap8,    Cx0005, 0x0004,  (NameSupport),           Cm1, 0 },
 
   // On/off cluster
-  { Zbool,    Cx0006, 0x0000,  Z_(Power),             Cm1 + Z_EXPORT_DATA, Z_MAPPING(Z_Data_OnOff, power) },
-  { Zenum8,   Cx0006, 0x4003,  Z_(StartUpOnOff),      Cm1, 0 },
-  { Zbool,    Cx0006, 0x8000,  Z_(Power),             Cm1, 0 },   // See 7280
-  { Zbool,    Cx0006, 0x4000,  Z_(OnOff),           Cm1, 0 },
-  { Zuint16,  Cx0006, 0x4001,  Z_(OnTime),           Cm1, 0 },
-  { Zuint16,  Cx0006, 0x4002,  Z_(OffWaitTime),           Cm1, 0 },
+  { Zbool,    Cx0006, 0x0000,  Z_(Power),               Cm1 + Z_EXPORT_DATA, Z_MAPPING(Z_Data_OnOff, power) },
+  { Zenum8,   Cx0006, 0x4003,  Z_(StartUpOnOff),        Cm1, 0 },
+  { Zbool,    Cx0006, 0x8000,  Z_(Power),               Cm1, 0 },   // See 7280
+  { Zbool,    Cx0006, 0x4000,  Z_(OnOff),               Cm1, 0 },
+  { Zuint16,  Cx0006, 0x4001,  Z_(OnTime),              Cm1, 0 },
+  { Zuint16,  Cx0006, 0x4002,  Z_(OffWaitTime),         Cm1, 0 },
 
   // On/Off Switch Configuration cluster
   { Zenum8,   Cx0007, 0x0000,  Z_(SwitchType),           Cm1, 0 },
   { Zenum8,   Cx0007, 0x0010,  Z_(SwitchActions),        Cm1, 0 },
 
   // Level Control cluster
-  { Zuint8,   Cx0008, 0x0000,  Z_(Dimmer),               Cm1 + Z_EXPORT_DATA, Z_MAPPING(Z_Data_Light, dimmer) },
-  { Zuint16,  Cx0008, 0x0001,  Z_(DimmerRemainingTime),  Cm1, 0 },
-  { Zmap8,    Cx0008, 0x000F,  Z_(DimmerOptions),        Cm1, 0 },
+  { Zuint8,   Cx0008, 0x0000,  Z_(Dimmer),                Cm1 + Z_EXPORT_DATA, Z_MAPPING(Z_Data_Light, dimmer) },
+  { Zuint16,  Cx0008, 0x0001,  Z_(DimmerRemainingTime),   Cm1, 0 },
+  { Zuint8,   Cx0008, 0x0002,  Z_(DimmerMinLevel),        Cm1, 0 },
+  { Zuint8,   Cx0008, 0x0003,  Z_(DimmerMaxLevel),        Cm1, 0 },
+  { Zuint16,  Cx0008, 0x0004,  Z_(DimmerCurrentFrequency),Cm1, 0 },
+  { Zuint16,  Cx0008, 0x0005,  Z_(DimmerMinFrequency),    Cm1, 0 },
+  { Zuint16,  Cx0008, 0x0006,  Z_(DimmerMaxFrequency),    Cm1, 0 },
   { Zuint16,  Cx0008, 0x0010,  Z_(OnOffTransitionTime),   Cm1, 0 },
-  { Zuint8,   Cx0008, 0x0011,  Z_(OnLevel),              Cm1, 0 },
-  { Zuint16,  Cx0008, 0x0012,  Z_(OnTransitionTime),     Cm1, 0 },
-  { Zuint16,  Cx0008, 0x0013,  Z_(OffTransitionTime),    Cm1, 0 },
-  { Zuint16,  Cx0008, 0x0014,  Z_(DefaultMoveRate),      Cm1, 0 },
+  { Zuint8,   Cx0008, 0x0011,  Z_(OnLevel),               Cm1, 0 },
+  { Zuint16,  Cx0008, 0x0012,  Z_(OnTransitionTime),      Cm1, 0 },
+  { Zuint16,  Cx0008, 0x0013,  Z_(OffTransitionTime),     Cm1, 0 },
+  { Zuint16,  Cx0008, 0x0014,  Z_(DefaultMoveRate),       Cm1, 0 },
+  { Zmap8,    Cx0008, 0x000F,  Z_(DimmerOptions),         Cm1, 0 },
+  { Zuint8,   Cx0008, 0x4000,  Z_(DimmerStartUpLevel),    Cm1, 0 },
 
   // Alarms cluster
   { Zuint16,  Cx0009, 0x0000,  Z_(AlarmCount),           Cm1, 0 },
@@ -747,6 +753,7 @@ const Z_AttributeConverter Z_PostProcess[] PROGMEM = {
   { Zuint16,  Cx0020, 0x0006,  Z_(FastPollTimeoutMax),   Cm1, 0 },
 
   // Green Power
+  // Server attributes
   { Zuint8,   Cx0021, 0x0000,  Z_(MaxSinkTableEntries),  Cm1, 0 },
   { Zoctstr16,Cx0021, 0x0001,  Z_(SinkTable),            Cm1, 0 },
   { Zmap8,    Cx0021, 0x0002,  Z_(CommunicationMode),    Cm1, 0 },
@@ -763,6 +770,7 @@ const Z_AttributeConverter Z_PostProcess[] PROGMEM = {
   { Zoctstr16,Cx0021, 0x0015,  Z_(BlockedGPDID),         Cm1, 0 },
   { Zmap24,   Cx0021, 0x0016,  Z_(ClientFunctionality),  Cm1, 0 },
   { Zmap24,   Cx0021, 0x0017,  Z_(ClientActiveFunctionality),  Cm1, 0 },
+  // Shared by Server and Client
   { Zmap8,    Cx0021, 0x0020,  Z_(SharedSecurityKeyType),Cm1, 0 },
   { Zkey128,  Cx0021, 0x0021,  Z_(SharedSecurityKey),    Cm1, 0 },
   { Zkey128,  Cx0021, 0x0022,  Z_(LinkKey),  Cm1, 0 },
@@ -959,6 +967,7 @@ const Z_AttributeConverter Z_PostProcess[] PROGMEM = {
   { Zmap16,   Cx0300, 0x400A,  Z_(ColorCapabilities),           Cm1, 0 },
   { Zuint16,  Cx0300, 0x400B,  Z_(ColorTempPhysicalMinMireds),           Cm1, 0 },
   { Zuint16,  Cx0300, 0x400C,  Z_(ColorTempPhysicalMaxMireds),           Cm1, 0 },
+  { Zuint16,  Cx0300, 0x4010,  Z_(ColorStartUpColorTempireds),           Cm1, 0 },
 
   // Ballast Configuration
   { Zuint8,   Cx0301, 0x0000,  Z_(BallastPhysicalMinLevel),           Cm1, 0 },

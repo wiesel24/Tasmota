@@ -361,6 +361,7 @@
 #define ZIGBEE_DISTINCT_TOPICS false             // [SetOption89] Enable unique device topic based on Zigbee device ShortAddr
 #define ZIGBEE_RMV_ZBRECEIVED  false             // [SetOption100] Remove ZbReceived form JSON message
 #define ZIGBEE_INDEX_EP        false             // [SetOption101] Add the source endpoint as suffix to attributes, ex `Power3` instead of `Power` if sent from endpoint 3
+#define ZIGBEE_TOPIC_FNAME     false             // [SetOption112] Enable friendly name in Zigbee topic (use with ZIGBEE_DISTINCT_TOPICS)
 
 /*********************************************************************************************\
  * END OF SECTION 1
@@ -427,6 +428,7 @@
 
 #define MQTT_TELE_RETAIN       0                 // Tele messages may send retain flag (0 = off, 1 = on)
 #define MQTT_CLEAN_SESSION     1                 // Mqtt clean session connection (0 = No clean session, 1 = Clean session (default))
+#define MQTT_DISABLE_SSERIALRECEIVED 0           // 1 = Disable sserialreceived mqtt messages, 0 = Enable sserialreceived mqtt messages (default)
 
 // -- MQTT - Domoticz -----------------------------
 #define USE_DOMOTICZ                             // Enable Domoticz (+6k code, +0.3k mem)

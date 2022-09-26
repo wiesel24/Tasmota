@@ -112,6 +112,7 @@ public:
     _linkquality(linkquality), _securityuse(securityuse), _seqnumber(seqnumber)
     {
       _frame_control.d8 = frame_control;
+      direction = _frame_control.b.direction;
       clusterSpecific = (_frame_control.b.frame_type != 0);
       needResponse = !_frame_control.b.disable_def_resp;
       payload.addBuffer(buf, buf_len);
@@ -131,7 +132,7 @@ public:
                     srcendpoint, dstendpoint, _wasbroadcast,
                     _linkquality, _securityuse, _seqnumber,
                     _frame_control,
-                    _frame_control.b.frame_type, _frame_control.b.direction, _frame_control.b.disable_def_resp,
+                    _frame_control.b.frame_type, direction, _frame_control.b.disable_def_resp,
                     manuf, transactseq, cmd,
                     &payload);
     if (Settings->flag3.tuya_serial_mqtt_publish) {
@@ -165,14 +166,14 @@ public:
     return zcl_frame;
   }
 
-  bool isClusterSpecificCommand(void) {
-    return _frame_control.b.frame_type & 1;
-  }
+  bool isClusterSpecificCommand(void) const { return _frame_control.b.frame_type & 1; }
+  uint8_t getDirection(void)          const { return direction; }
 
   // parsers for received messages
   void parseReportAttributes(Z_attribute_list& attr_list);
   void generateSyntheticAttributes(Z_attribute_list& attr_list);
   void removeInvalidAttributes(Z_attribute_list& attr_list);
+  void applySynonymAttributes(Z_attribute_list& attr_list);
   void computeSyntheticAttributes(Z_attribute_list& attr_list);
   void generateCallBacks(Z_attribute_list& attr_list);
   void parseReadAttributes(uint16_t shortaddr, Z_attribute_list& attr_list);
@@ -278,10 +279,12 @@ uint8_t toPercentageCR2032(uint32_t voltage) {
 // Adds to buf:
 // - n bytes: value (typically between 1 and 4 bytes, or bigger for strings)
 // returns number of bytes of attribute, or <0 if error
+// If the value is `NAN`, the value encoded is the "zigbee invalid value"
 int32_t encodeSingleAttribute(SBuffer &buf, double val_d, const char *val_str, uint8_t attrtype) {
   uint32_t len = Z_getDatatypeLen(attrtype);    // pre-compute length, overloaded for variable length attributes
-  uint32_t u32 = val_d;
-  int32_t  i32 = val_d;
+  bool nan = isnan(val_d);
+  uint32_t u32 = nan ? 0xFFFFFFFF : roundf(val_d);
+  int32_t  i32 = roundf(val_d);
   float    f32 = val_d;
 
   switch (attrtype) {
@@ -315,13 +318,13 @@ int32_t encodeSingleAttribute(SBuffer &buf, double val_d, const char *val_str, u
 
     // signed 8
     case Zint8:      // int8
-      buf.add8(i32);
+      buf.add8(nan ? 0x80 : i32);
       break;
     case Zint16:      // int16
-      buf.add16(i32);
+      buf.add16(nan ? 0x8000 : i32);
       break;
     case Zint32:      // int32
-      buf.add32(i32);
+      buf.add32(nan ? 0x80000000 : i32);
       break;
 
     case Zsingle:      // float
@@ -698,12 +701,12 @@ void ZCLFrame::removeInvalidAttributes(Z_attribute_list& attr_list) {
   }
 }
 
+
 //
-// Compute new attributes based on the standard set
-// Note: both function are now split to compute on extracted attributes
+// Apply synonyms from the plug-in synonym definitions
 //
-void ZCLFrame::computeSyntheticAttributes(Z_attribute_list& attr_list) {
-  const Z_Device & device = zigbee_devices.findShortAddr(shortaddr);
+void ZCLFrame::applySynonymAttributes(Z_attribute_list& attr_list) {
+  Z_Device & device = zigbee_devices.findShortAddr(shortaddr);
 
   String modelId((char*) device.modelId);
   // scan through attributes and apply specific converters
@@ -730,6 +733,20 @@ void ZCLFrame::computeSyntheticAttributes(Z_attribute_list& attr_list) {
         attr.setFloat(fval);
       }
     }
+  }
+}
+
+//
+// Compute new attributes based on the standard set
+// Note: both function are now split to compute on extracted attributes
+//
+void ZCLFrame::computeSyntheticAttributes(Z_attribute_list& attr_list) {
+  Z_Device & device = zigbee_devices.findShortAddr(shortaddr);
+
+  String modelId((char*) device.modelId);
+  // scan through attributes and apply specific converters
+  for (auto &attr : attr_list) {
+    if (attr.key_is_str) { continue; }    // pass if key is a name
 
     uint32_t ccccaaaa = (attr.cluster << 16) | attr.attr_id;
 
@@ -812,9 +829,29 @@ void ZCLFrame::computeSyntheticAttributes(Z_attribute_list& attr_list) {
         }
         break;
       case 0x05000002:    // ZoneStatus
-        const Z_Data_Alarm & alarm = (const Z_Data_Alarm&) zigbee_devices.getShortAddr(shortaddr).data.find(Z_Data_Type::Z_Alarm, srcendpoint);
-        if (&alarm != nullptr) {
-          alarm.convertZoneStatus(attr_list, attr.getUInt());
+        {
+          const Z_Data_Alarm & alarm = (const Z_Data_Alarm&) zigbee_devices.getShortAddr(shortaddr).data.find(Z_Data_Type::Z_Alarm, srcendpoint);
+          if (&alarm != nullptr) {
+            alarm.convertZoneStatus(attr_list, attr.getUInt());
+          }
+        }
+        break;
+      // convert AC multipliers/dividers
+      case 0x0B040600 ... 0x0B040605:   // cluser 0x0B04 - attr 0x0600..0x0605
+        {
+          uint16_t val = attr.getUInt();
+          Z_Data_Plug & plug = device.data.get<Z_Data_Plug>();
+          if (&plug != &z_data_unk) {
+            switch (ccccaaaa) {
+              case 0x0B040600:  plug.setACVoltageMul(val);    break;
+              case 0x0B040601:  plug.setACVoltageDiv(val);    break;
+              case 0x0B040602:  plug.setACCurrentMul(val);    break;
+              case 0x0B040603:  plug.setACCurrentDiv(val);    break;
+              case 0x0B040604:  plug.setACPowerMul(val);      break;
+              case 0x0B040605:  plug.setACPowerDiv(val);      break;
+            }
+          }
+          // AddLog(LOG_LEVEL_INFO, ">>>: cluster=0x%04X attr=0x%04X v=%i", attr.cluster, attr.attr_id, attr.getUInt());
         }
         break;
     }
@@ -1105,17 +1142,26 @@ void ZCLFrame::parseClusterSpecificCommand(Z_attribute_list& attr_list) {
     device.debounce_transact = transactseq;
     zigbee_devices.setTimer(shortaddr, 0 /* groupaddr */, USE_ZIGBEE_DEBOUNCE_COMMANDS, 0 /*clusterid*/, srcendpoint, Z_CAT_DEBOUNCE_CMD, 0, &Z_ResetDebounce);
 
-    convertClusterSpecific(attr_list, cluster, cmd, _frame_control.b.direction, shortaddr, srcendpoint, payload);
-    if (!Settings->flag5.zb_disable_autoquery) {
-    // read attributes unless disabled
-      if (!_frame_control.b.direction) {    // only handle server->client (i.e. device->coordinator)
-        if (_wasbroadcast) {                // only update for broadcast messages since we don't see unicast from device to device and we wouldn't know the target
-          sendHueUpdate(BAD_SHORTADDR, groupaddr, cluster);
+    bool cmd_parsed = false;
+    if (srcendpoint == 0xF2 && dstendpoint == 0xF2 && cluster == 0x0021) {
+      // handle Green Power commands
+      cmd_parsed = convertGPSpecific(attr_list, cmd, direction, shortaddr, _wasbroadcast, payload);
+    }
+    // was it successfully parsed already?
+    if (!cmd_parsed) {
+      // handle normal commands
+      convertClusterSpecific(attr_list, cluster, cmd, direction, shortaddr, srcendpoint, payload);
+      if (!Settings->flag5.zb_disable_autoquery) {
+      // read attributes unless disabled
+        if (!direction) {    // only handle server->client (i.e. device->coordinator)
+          if (_wasbroadcast) {                // only update for broadcast messages since we don't see unicast from device to device and we wouldn't know the target
+            sendHueUpdate(BAD_SHORTADDR, groupaddr, cluster);
+          }
         }
       }
     }
   }
-  // Send Default Response to acknowledge the attribute reporting
+  // Send Default Response to acknowledge the command
   if (0 == _frame_control.b.disable_def_resp) {
     // the device expects a default response
     ZCLFrame zcl(2);   // message is 4 bytes
@@ -1441,25 +1487,30 @@ void Z_postProcessAttributes(uint16_t shortaddr, uint16_t src_ep, class Z_attrib
       uint16_t cluster = attr.cluster;
       uint16_t attribute = attr.attr_id;
       uint32_t ccccaaaa = (attr.cluster << 16) | attr.attr_id;
-
       // Look for an entry in the converter table
       bool found = false;
 
       // first search in device plug-ins
-      const Z_attribute_match matched_attr = Z_findAttributeMatcherById(shortaddr, cluster, attribute, true);
+      Z_attribute_match matched_attr = Z_findAttributeMatcherById(shortaddr, cluster, attribute, true);
       found = matched_attr.found();
+      // special case for Tuya attributes, also search for type `FF` if not found
+      if (!found && cluster == 0xEF00) {
+        // search for attribute `FFxx` for wildcard types
+        matched_attr = Z_findAttributeMatcherById(shortaddr, cluster, 0xFF00 | (attribute & 0x00FF), true);
+        found = matched_attr.found();
+      }
 
-      float    fval   = attr.getFloat();
+      float fval = attr.getFloat();
       if (found && (matched_attr.map_type != Z_Data_Type::Z_Unknown)) {
         // We apply an automatic mapping to Z_Data_XXX object
-        // First we find or instantiate the correct Z_Data_XXX accorfing to the endpoint
+        // First we find or instantiate the correct Z_Data_XXX according to the endpoint
         // Then store the attribute at the attribute addres (via offset) and according to size 8/16/32 bits
 
         // add the endpoint if it was not already known
         device.addEndpoint(src_ep);
         // we don't apply the multiplier, but instead store in Z_Data_XXX object
         Z_Data & data = device.data.getByType(matched_attr.map_type, src_ep);
-        uint8_t *attr_address = ((uint8_t*)&data) + sizeof(Z_Data) + matched_attr.map_offset;
+        uint8_t * attr_address = ((uint8_t*)&data) + sizeof(Z_Data) + matched_attr.map_offset;
         uint32_t uval32 = attr.getUInt();     // call converter to uint only once
         int32_t  ival32 = attr.getInt();     // call converter to int only once
         // AddLog(LOG_LEVEL_DEBUG_MORE, PSTR(D_LOG_ZIGBEE "Mapping type=%d offset=%d zigbee_type=%02X value=%d\n"), (uint8_t) matched_attr.matched_attr, matched_attr.map_offset, matched_attr.zigbee_type, ival32);
@@ -1512,6 +1563,22 @@ void Z_postProcessAttributes(uint16_t shortaddr, uint16_t src_ep, class Z_attrib
           break;
         case 0x00060000:
         case 0x00068000: device.setPower(attr.getBool(), src_ep);                     break;
+        // apply multiplier/divisor to AC values
+        case 0x0B040505:    // RMSVoltage
+        case 0x0B040508:    // RMSCurrent
+        case 0x0B04050B:    // ActivePower
+          {
+            const Z_Data_Plug & plug = device.data.find<Z_Data_Plug>();
+            if (&plug != &z_data_unk) {
+              switch (ccccaaaa) {
+                case 0x0B040505:  fval = fval * plug.getACVoltageMul() / plug.getACVoltageDiv();    break;
+                case 0x0B040508:  fval = fval * plug.getACCurrentMul() / plug.getACCurrentDiv();    break;
+                case 0x0B04050B:  fval = fval * plug.getACPowerMul() / plug.getACPowerDiv();    break;
+              }
+              attr.setFloat(fval);
+            }
+          }
+          break;
       }
 
       // now apply the multiplier to make it human readable
@@ -1681,7 +1748,19 @@ void Z_Data::toAttributes(Z_attribute_list & attr_list) const {
             fval = fval / divider;
           }
         }
+        // special case for plugs, with parametric multiplier/divisor
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winvalid-offsetof"   // avoid warnings since we're using offsetof() in a risky way
+        const Z_Data_Plug * plug = (Z_Data_Plug*) this;
+        if (map_type == Z_Data_Type::Z_Plug) {
+          if (map_offset == Z_OFFSET(Z_Data_Plug, mains_voltage)) {
+            fval = fval * plug->getACVoltageMul() / plug->getACVoltageDiv();
+          } else if (map_offset == Z_OFFSET(Z_Data_Plug, mains_power)) {
+            fval = fval * plug->getACPowerMul() / plug->getACPowerDiv();
+          }
+        }
         attr.setFloat(fval);
+#pragma GCC diagnostic pop
       }
     }
   }

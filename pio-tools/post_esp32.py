@@ -22,6 +22,13 @@ Import("env")
 
 env = DefaultEnvironment()
 platform = env.PioPlatform()
+board = env.BoardConfig()
+extra_flags = board.get("build.extra_flags", "")
+extra_flags = [element.replace("-D", " ") for element in extra_flags]
+extra_flags = ''.join(extra_flags)
+build_flags = env.GetProjectOption("build_flags")
+build_flags = [element.replace("-D", " ") for element in build_flags]
+build_flags = ''.join(build_flags)
 
 from genericpath import exists
 import os
@@ -36,6 +43,13 @@ sys.path.append(join(platform.get_package_dir("tool-esptoolpy")))
 import esptool
 
 FRAMEWORK_DIR = platform.get_package_dir("framework-arduinoespressif32")
+if "CORE32SOLO1" in extra_flags or "FRAMEWORK_ARDUINO_SOLO1" in build_flags:
+    FRAMEWORK_DIR = platform.get_package_dir("framework-arduino-solo1")
+    print ("Building with Solo1 framework")
+elif "FRAMEWORK_ARDUINO_ITEAD" in build_flags:
+    FRAMEWORK_DIR = platform.get_package_dir("framework-arduino-ITEAD")
+    print ("Building with ITEAD framework")
+
 variants_dir = join(FRAMEWORK_DIR, "variants", "tasmota")
 
 def esp32_create_chip_string(chip):
@@ -136,9 +150,11 @@ def esp32_create_combined_bin(source, target, env):
     flash_freq = str(flash_freq).replace("L", "")
     flash_freq = str(int(int(flash_freq) / 1000000)) + "m"
     flash_mode = env.BoardConfig().get("build.flash_mode", "dio")
-    if flash_mode == "qio":
+    memory_type = env.BoardConfig().get("build.arduino.memory_type", "qio_qspi")
+
+    if flash_mode == "qio" or flash_mode == "qout":
         flash_mode = "dio"
-    elif flash_mode == "qout":
+    if memory_type == "opi_opi" or memory_type == "opi_qspi":
         flash_mode = "dout"
     cmd = [
         "--chip",
