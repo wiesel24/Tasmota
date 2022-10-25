@@ -268,8 +268,7 @@ typedef union {
     uint32_t spare25 : 1;                  // bit 25
     uint32_t spare26 : 1;                  // bit 26
     uint32_t spare27 : 1;                  // bit 27
-    uint32_t spare28 : 1;                  // bit 28
-    uint32_t spare29 : 1;                  // bit 29
+    uint32_t sunrise_dawn_angle : 2;       // bits 28/29 (v12.1.1.4) - 
     uint32_t temperature_set_res : 2;      // bits 30/31 (v9.3.1.4) - (Tuya)
   };
 } SysMBitfield2;
@@ -588,7 +587,6 @@ typedef struct {
   uint8_t       eth_address;               // 45E
   uint8_t       module;                    // 45F
   WebCamCfg     webcam_config;             // 460
-
   uint8_t       ws_width[3];               // 464
   char          serial_delimiter;          // 467
   uint8_t       seriallog_level;           // 468
@@ -727,8 +725,7 @@ typedef struct {
   mytmplt8285   ex_user_template8;         // 72F  14 bytes (ESP8266) - Free since 9.0.0.1
 #endif  // ESP8266
 #ifdef ESP32
-  uint8_t       free_esp32_72f[1];         // 72F
-
+  uint8_t       webcam_clk;                // 72F
   WebCamCfg2    webcam_config2;            // 730
 
   uint8_t       free_esp32_734[9];         // 734
@@ -836,9 +833,10 @@ typedef struct {
   uint8_t       modbus_sbaudrate;          // F61
   uint8_t       modbus_sconfig;            // F62
 
-  uint8_t       free_f63[17];              // F63 - Decrement if adding new Setting variables just above and below
+  uint8_t       free_f63[13];              // F63 - Decrement if adding new Setting variables just above and below
 
   // Only 32 bit boundary variables below
+  uint32_t      touch_threshold;           // F70  
   SOBitfield6   flag6;                     // F74
   uint16_t      flowratemeter_calibration[2];// F78
   int32_t       energy_kWhexport_ph[3];    // F7C

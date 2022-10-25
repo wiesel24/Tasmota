@@ -195,9 +195,12 @@ enum UserSelectablePins {
   GPIO_REL1_BI, GPIO_REL1_BI_INV,      // 8 x Relays bistable
   GPIO_I2S_MCLK,
   GPIO_MBR_TX, GPIO_MBR_RX,            // Modbus Bridge Serial interface
+  GPIO_ADE7953_RST,                    // ADE7953 Reset
+  GPIO_NRG_MBS_TX, GPIO_NRG_MBS_RX,    // Generic Energy Modbus device
+  GPIO_ADE7953_CS,                     // ADE7953 SPI Chip Select
   GPIO_SENSOR_END };
 
-// Error as warning to rethink GPIO usage
+// Error as warning to rethink GPIO usage with max 2045
 static_assert(GPIO_SENSOR_END < 2000, "Too many UserSelectablePins");
 
 enum ProgramSelectablePins {
@@ -205,7 +208,7 @@ enum ProgramSelectablePins {
   GPIO_USER,           // User configurable needs to be 2047
   GPIO_MAX };
 
-#define MAX_OPTIONS_A  6                   // Increase if more bits are used from GpioOptionABits
+#define MAX_OPTIONS_A  7                   // Increase if more bits are used from GpioOptionABits
 
 typedef union {                            // Restricted by MISRA-C Rule 18.4 but so useful...
   uint32_t data;                           // Allow bit manipulation using SetOption
@@ -216,7 +219,7 @@ typedef union {                            // Restricted by MISRA-C Rule 18.4 bu
     uint32_t enable_ccloader : 1;          // bit 3 (v9.4.0.5)   - Option_A4 - (Zigbee) Enable CCLoader using Zigbee Rx/Tx/Rst Gpios
     uint32_t rotary_mi_desk : 1;           // bit 4 (v9.5.0.5)   - Option_A5 - (Rotary) Enable Mi Desk emulation
     uint32_t linkind_support : 1;          // bit 5 (v10.1.0.4)  - Option_A6 - (Light) LinkInd support
-    uint32_t spare06 : 1;                  // bit 6
+    uint32_t shelly_pro : 1;               // bit 6 (v12.2.0.1)  - Option_A7 - (Device) Shelly Pro
     uint32_t spare07 : 1;                  // bit 7
     uint32_t spare08 : 1;                  // bit 8
     uint32_t spare09 : 1;                  // bit 9
@@ -437,18 +440,23 @@ const char kSensorNames[] PROGMEM =
   D_SENSOR_RELAY "_b|" D_SENSOR_RELAY "_bi|"
   D_SENSOR_I2S_MCLK "|"
   D_SENSOR_MBR_TX "|" D_SENSOR_MBR_RX "|"
+  D_SENSOR_ADE7953_RST "|"
+  D_SENSOR_NRG_MBS_TX "|" D_SENSOR_NRG_MBS_RX "|"
+  D_SENSOR_ADE7953_CS "|"
   ;
 
 const char kSensorNamesFixed[] PROGMEM =
   D_SENSOR_USER;
 
+// Max number of GPIOs
 #define MAX_MAX31865S    6
 #define MAX_FLOWRATEMETER 2
 #define MAX_A4988_MSS    3
 #define MAX_WEBCAM_DATA  8
 #define MAX_WEBCAM_HSD   3
-#define MAX_SM2135_DAT   7
+#define MAX_SM2135_DAT   10
 #define MAX_SM2335_DAT   16
+#define MAX_DSB          4
 
 const uint16_t kGpioNiceList[] PROGMEM = {
   GPIO_NONE,                            // Not used
@@ -465,7 +473,9 @@ const uint16_t kGpioNiceList[] PROGMEM = {
   AGPIO(GPIO_KEY1_INV_NP) + MAX_KEYS,
 #ifdef ESP32
   AGPIO(GPIO_KEY1_INV_PD) + MAX_KEYS,
+#if defined(SOC_TOUCH_VERSION_1) || defined(SOC_TOUCH_VERSION_2)
   AGPIO(GPIO_KEY1_TC) + MAX_KEYS,       // Touch button
+#endif  // ESP32 SOC_TOUCH_VERSION_1 or SOC_TOUCH_VERSION_2
 #endif
   AGPIO(GPIO_SWT1) + MAX_SWITCHES,      // User connected external switches
   AGPIO(GPIO_SWT1_NP) + MAX_SWITCHES,
@@ -551,7 +561,7 @@ const uint16_t kGpioNiceList[] PROGMEM = {
 #ifdef USE_SDCARD
   AGPIO(GPIO_SDCARD_CS),                // SDCard in SPI mode
 #endif  // USE_SDCARD
-#ifdef USE_MCP2515
+#if defined(USE_MCP2515) || defined(USE_CANSNIFFER)
   AGPIO(GPIO_MCP2515_CS),
 #endif  // USE_MCP2515
 #endif  // USE_SPI
@@ -655,9 +665,11 @@ const uint16_t kGpioNiceList[] PROGMEM = {
   AGPIO(GPIO_DHT11_OUT),      // Pseudo Single wire DHT11, DHT21, DHT22, AM2301, AM2302, AM2321
 #endif
 #ifdef USE_DS18x20
-  AGPIO(GPIO_DSB),            // Single wire DS18B20 or DS18S20
-  AGPIO(GPIO_DSB_OUT),        // Pseudo Single wire DS18B20 or DS18S20
-#endif
+  AGPIO(GPIO_DSB) + MAX_DSB,  // Single wire DS18B20 or DS18S20
+#ifdef ESP8266
+  AGPIO(GPIO_DSB_OUT) + MAX_DSB,  // Pseudo Single wire DS18B20 or DS18S20
+#endif  // ESP8266
+#endif  // USE_DS18x20
 #ifdef USE_LMT01
   AGPIO(GPIO_LMT01),          // LMT01, count pulses on GPIO
 #endif
@@ -764,11 +776,17 @@ const uint16_t kGpioNiceList[] PROGMEM = {
   AGPIO(GPIO_HJL_CF),         // HJL-01/BL0937 CF power
 #endif
 #if defined(USE_I2C) && defined(USE_ADE7880)
-  AGPIO(GPIO_ADE7880_IRQ) + 2,  // ADE7880 IRQ
+  AGPIO(GPIO_ADE7880_IRQ) + 2,  // ADE7880 IRQ - (1 = IRQ1, 2 = IRQ2)
 #endif
-#if defined(USE_I2C) && defined(USE_ADE7953)
-  AGPIO(GPIO_ADE7953_IRQ) + 2,  // ADE7953 IRQ
-#endif
+#ifdef USE_ADE7953
+#if defined(USE_I2C) || defined(USE_SPI)
+  AGPIO(GPIO_ADE7953_IRQ) + 5,  // ADE7953 IRQ - (1 = Shelly 2.5, 2 = Shelly EM, 3 = Shelly Plus 2PM, 4 = Shelly Pro 1PM, 5 = Shelly Pro 2PM)
+  AGPIO(GPIO_ADE7953_RST),    // ADE7953 Reset
+#ifdef USE_SPI
+  AGPIO(GPIO_ADE7953_CS) + 2,  // ADE7953 SPI Chip Select (1 = CS1 (1PM, 2PM), 2 = CS2 (2PM))
+#endif  // USE_SPI
+#endif  // USE_I2C or USE_SPI
+#endif  // USE_ADE7953
 #ifdef USE_CSE7761
   AGPIO(GPIO_CSE7761_TX),     // CSE7761 Serial interface (Dual R3)
   AGPIO(GPIO_CSE7761_RX),     // CSE7761 Serial interface (Dual R3)
@@ -793,6 +811,10 @@ const uint16_t kGpioNiceList[] PROGMEM = {
 #endif
 #ifdef USE_PZEM_DC
   AGPIO(GPIO_PZEM017_RX),     // PZEM-003,017 Serial Modbus interface
+#endif
+#ifdef USE_MODBUS_ENERGY
+  AGPIO(GPIO_NRG_MBS_TX),     // Generic Energy Modbus device
+  AGPIO(GPIO_NRG_MBS_RX),
 #endif
 #ifdef USE_SDM120
   AGPIO(GPIO_SDM120_TX),      // SDM120 Serial interface

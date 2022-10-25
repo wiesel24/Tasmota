@@ -72,7 +72,7 @@ Latest released binaries can be downloaded from
 - http://ota.tasmota.com/tasmota/release
 
 Historical binaries can be downloaded from
-- http://ota.tasmota.com/tasmota/release-12.1.1
+- http://ota.tasmota.com/tasmota/release-12.2.0
 
 The latter links can be used for OTA upgrades too like ``OtaUrl http://ota.tasmota.com/tasmota/release/tasmota.bin.gz``
 
@@ -97,7 +97,7 @@ Latest released binaries can be downloaded from
 - http://ota.tasmota.com/tasmota32/release
 
 Historical binaries can be downloaded from
-- http://ota.tasmota.com/tasmota32/release-12.1.1
+- http://ota.tasmota.com/tasmota32/release-12.2.0
 
 The latter links can be used for OTA upgrades too like ``OtaUrl http://ota.tasmota.com/tasmota32/release/tasmota32.bin``
 
@@ -107,46 +107,20 @@ The latter links can be used for OTA upgrades too like ``OtaUrl http://ota.tasmo
 
 [Complete list](BUILDS.md) of available feature and sensors.
 
-## Changelog v12.1.1.2
+## Changelog v12.2.0.1
 ### Added
-- Command ``SetOption46 0..255`` to add 0..255 * 10 milliseconds power on delay before initializing I/O [#15438](https://github.com/arendst/Tasmota/issues/15438)
-- Command ``SetOption146 1`` to enable display of ESP32 internal temperature
-- Command ``SetOption46 0..255`` to add 0..255 * 10 milliseconds power on delay before initializing I/O [#15438](https://github.com/arendst/Tasmota/issues/15438)
-- Command ``StatusRetain`` [#11109](https://github.com/arendst/Tasmota/issues/11109)
-- Command ``UrlFetch <url>`` to download a file to filesystem
-- Command ``DspSpeed 2..127`` to control message rotation speed on display of POWR3xxD and THR3xxD
-- Command ``DspLine<1|2> <index>,<unit>,<index>,<unit>,...`` to select message(s) on display of POWR3xxD and THR3xxD
-- Support for SGP40 gas and air quality sensor [#16341](https://github.com/arendst/Tasmota/issues/16341)
-- Support for Modbus writing using ModbusBridge by JeroenSt [#16351](https://github.com/arendst/Tasmota/issues/16351)
-- Support for DFRobot SEN0390 V30B ambient light sensor [#16105](https://github.com/arendst/Tasmota/issues/16105)
-- Zigbee device plugin mechanism with commands ``ZbLoad``, ``ZbUnload`` and ``ZbLoadDump`` [#16252](https://github.com/arendst/Tasmota/issues/16252)
-- Zigbee basic support for Green Power [#16407](https://github.com/arendst/Tasmota/issues/16407)
-- Flowrate meter flow amount/duration, show values in table format [#16385](https://github.com/arendst/Tasmota/issues/16385)
-- Support of optional file calib.dat on ADE7953 based energy monitors like Shelly EM [#16486](https://github.com/arendst/Tasmota/issues/16486)
-- Support for Ethernet in ESP32 safeboot firmware [#16388](https://github.com/arendst/Tasmota/issues/16388)
-- ESP32-S3 support for internal temperature sensor
-- Berry has persistent MQTT subscriptions: auto-subscribe at (re)connection
-- Berry automated solidification of code
+- DS18x20 support on up to four GPIOs by md5sum-as [#16833](https://github.com/arendst/Tasmota/issues/16833)
+- Berry add `bytes().setbytes()` [#16892](https://github.com/arendst/Tasmota/issues/16892)
+- Support for Shelly Pro 1/2 [#16773](https://github.com/arendst/Tasmota/issues/16773)
 
 ### Breaking Changed
 
 ### Changed
-- ESP32 NimBLE library from v1.3.6 to v1.4.0
-- IRremoteESP8266 library from v2.8.2 to v2.8.4
-- Tasmota Core32 from 2.0.4.1 to 2.0.5
-- TasmotaModbus library from v3.5.0 to v3.6.0 [#16351](https://github.com/arendst/Tasmota/issues/16351)
-- Button debouncing V3 by adopting switch debounce code [#16339](https://github.com/arendst/Tasmota/issues/16339)
-- Thermostat max allowed temperature from 100 to 200C [#16363](https://github.com/arendst/Tasmota/issues/16363)
-- Using command ``SerialBuffer`` raise max allowed buffer size to 2048 characters [#16374](https://github.com/arendst/Tasmota/issues/16374)
-- Zigbee report unprocessed attributes
-- ESP32 Increase number of button GPIOs from 8 to 28 [#16518](https://github.com/arendst/Tasmota/issues/16518)
-- ESP32 Platformio one Platform for all Tasmota frameworks Core32 2.0.5 [#16644](https://github.com/arendst/Tasmota/issues/16644)
+- ESP32 NimBLE library from v1.4.0 to v1.4.1 [#16775](https://github.com/arendst/Tasmota/issues/16775)
+- DS18x20 ``DS18Alias`` to ``DS18Sens`` [#16833](https://github.com/arendst/Tasmota/issues/16833)
+- Compiling with reduced boards manifests in favour of Autoconfig [#16848](https://github.com/arendst/Tasmota/issues/16848)
 
 ### Fixed
-- RTC not detected when lights are present [#16242](https://github.com/arendst/Tasmota/issues/16242)
-- DNS lookup for .local domains [#16273](https://github.com/arendst/Tasmota/issues/16273)
-- Button response delay regression from v12.0.2.4 [#16319](https://github.com/arendst/Tasmota/issues/16319)
-- Lost module name in GUI regression from v12.0.2.4 - 20220803 [#16324](https://github.com/arendst/Tasmota/issues/16324)
-- Removed whitespace from JSON values with no decimals [#16365](https://github.com/arendst/Tasmota/issues/16365)
+- BP5758D red channel corruption regression from v12.1.1.6 [#16850](https://github.com/arendst/Tasmota/issues/16850)
 
 ### Removed

@@ -204,19 +204,30 @@
 #undef USE_I2C
 #undef USE_HOME_ASSISTANT
 #define USE_TASMOTA_DISCOVERY                    // Enable Tasmota Discovery support (+2k code)
-#undef USE_COUNTER
+#undef USE_DOMOTICZ
+#undef USE_SERIAL_BRIDGE
+#undef ROTARY_V1
 #undef USE_IR_REMOTE
+#undef USE_ADC
 #undef USE_AC_ZERO_CROSS_DIMMER
 #undef USE_PWM_DIMMER
+#undef USE_PWM_DIMMER_REMOTE
 #undef USE_TUYA_MCU
 #undef USE_EMULATION_HUE
 #undef USE_EMULATION_WEMO
+#undef USE_BUZZER
 #undef USE_ARILUX_RF
 #undef USE_DS18x20
+#undef USE_BMP
+#undef USE_DHT
+#undef USE_BH1750
 #undef USE_WS2812
 #undef USE_ENERGY_SENSOR
+#undef USE_SHUTTER
+#undef USE_DEVICE_GROUPS
 //#undef USE_BERRY                                 // Disable Berry scripting language
 #undef USE_MI_ESP32                             // (ESP32 only) Disable support for ESP32 as a BLE-bridge (+9k2 mem, +292k flash)
+#undef USE_BLE_ESP32
 #endif  // FIRMWARE_WEBCAM
 
 /*********************************************************************************************\
@@ -669,6 +680,9 @@
 
 #define USE_SPI                                // Hardware SPI using GPIO12(MISO), GPIO13(MOSI) and GPIO14(CLK) in addition to two user selectable GPIOs(CS and DC)
 //#define USE_RC522                              // Add support for MFRC522 13.56Mhz Rfid reader (+6k code)
+//#define USE_MCP2515                            // Add support for can bus using MCP2515 (+7k code)
+//#define USE_CANSNIFFER                         // Add support for can bus sniffer using MCP2515 (+5k code)
+#define USE_SHELLY_PRO                           // Add support for Shelly Pro
 
 #define USE_MHZ19                                // Add support for MH-Z19 CO2 sensor (+2k code)
 #define USE_SENSEAIR                             // Add support for SenseAir K30, K70 and S8 CO2 sensor (+2k3 code)
@@ -733,6 +747,9 @@
   #define USE_IR_RECEIVE                         // Support for IR receiver (+5k5 code, 264 iram)
 #define USE_LMT01                                // Add support for TI LMT01 temperature sensor, count pulses on single GPIO (+0k5 code)
 //#define USE_WIEGAND                              // Add support for 24/26/32/34 bit RFID Wiegand interface (D0/D1) (+1k7 code)
+#define USE_SHIFT595                             // Add support for 74xx595 8-bit shift registers (+0k7 code)
+//  #define SHIFT595_INVERT_OUTPUTS false            // [SetOption133] Don't invert outputs of 74x595 shift register
+//  #define SHIFT595_DEVICE_COUNT  1                 // [Shift595DeviceCount] Set the number of connected 74x595 shift registers
 #define USE_TM1638                               // Add support for TM1638 switches copying Switch1 .. Switch8 (+1k code)
 #define USE_HX711                                // Add support for HX711 load cell (+1k5 code)
 //#define USE_HX711_GUI                            // Add optional web GUI to HX711 as scale (+1k8 code)

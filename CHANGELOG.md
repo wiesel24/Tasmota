@@ -3,7 +3,66 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased] - Development
 
-## [12.1.1.2]
+## [12.2.0.1]
+### Added
+- DS18x20 support on up to four GPIOs by md5sum-as (#16833)
+- Berry add `bytes().setbytes()` (#16892)
+- Support for Shelly Pro 1/2 (#16773)
+- Add Zigbee router firmware for Sonoff ZBBridgePro (#16900)
+- Prepare for DMX Artnet support on ESP32
+
+### Breaking Changed
+
+### Changed
+- DS18x20 ``DS18Alias`` to ``DS18Sens`` (#16833)
+- Compiling with reduced boards manifests in favour of Autoconfig (#16848)
+- Add NeoPool ``NPFiltration 2`` toggle cmnd (#16859)
+- ESP32 NimBLE library from v1.4.0 to v1.4.1 (#16775)
+
+### Fixed
+- BP5758D red channel corruption regression from v12.1.1.6 (#16850)
+
+### Removed
+
+## [Released]
+
+## [12.2.0] 20221017
+- Release Patrick
+
+## [12.1.1.6] 20221017
+### Added
+- Command ``WcClock 10..200`` set webcam clock in MHz. Default is 20
+- ESP32 Automatically resize FS to max flash size at initial boot (#16838)
+- Command ``SspmPowerOnState<relay> 0|1|2`` to set Sonoff SPM 4Relay module v1.2.0 power on state overruling tasmota  global power on state. 0 = Off, 1 = On, 2 = Saved state (#13447)
+- Support for Flash size 32/64/128 MB in Partition Wizard and auto-resize
+
+## [12.1.1.5] 20221013
+### Added
+- Command ``Sunrise 0..3`` to select sunrise dawn angle between Normal, Civil, Nautical or Astronomical (#16795)
+
+## [12.1.1.4] 20221012
+### Added
+- Support for Shelly Plus 2PM using template ``{"NAME":"Shelly Plus 2PM PCB v0.1.9","GPIO":[320,0,0,0,32,192,0,0,225,224,0,0,0,0,193,0,0,0,0,0,0,608,640,3458,0,0,0,0,0,9472,0,4736,0,0,0,0],"FLAG":0,"BASE":1,"CMND":"AdcParam1 2,10000,10000,3350"}``
+- Zigbee Alexa/Hue emulation, support multiple switches on separate endpoints (#16718)
+- Support for QMC5883L magnetic induction sensor by Helge Scheunemann (#16714)
+- LVGL/HASPmota add tiny "pixel perfect" fonts for small screens (#16758)
+- HASPmota support for TTF fonts (#16759)
+- Support for Modbus Energy Monitoring devices using a rule file. See ``xnrg_29_modbus.ino`` for more information
+
+### Changed
+- ESP32 LVGL library from v8.3.0 to v8.3.2
+- Increase serial console fixed input buffer size from 520 to 800
+- Swap Shelly EM internal channels A and B to match P1 and P2 (#16486)
+
+## [12.1.1.3] 20221003
+### Added
+- ESP32-S2 and ESP32-S3 touch button support
+- Zigbee friendly names per endpoint
+
+### Fixed
+- ESP32 touch button multi-press and hold detection (#16596)
+
+## [12.1.1.2] 20220927
 ### Added
 - Berry has persistent MQTT subscriptions: auto-subscribe at (re)connection
 - Berry automated solidification of code
@@ -21,10 +80,6 @@ All notable changes to this project will be documented in this file.
 - IRremoteESP8266 library from v2.8.3 to v2.8.4
 - Zigbee report unprocessed attributes
 - Platformio one Platform for all Tasmota frameworks Core32 2.0.5 (#16644)
-
-### Fixed
-
-### Removed
 
 ## [12.1.1.1] 20220910
 ### Added
@@ -55,8 +110,6 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - ESP32 NimBLE library from v1.3.6 to v1.4.0
-
-## [Released]
 
 ## [12.1.1] 20220825
 - Release Patricia

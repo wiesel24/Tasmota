@@ -517,8 +517,13 @@ void SetLedPowerAll(uint32_t state)
   }
 }
 
-void SetLedLink(uint32_t state)
-{
+void SetLedLink(uint32_t state) {
+#ifdef ESP32
+  uint32_t index = XdrvMailbox.index;
+  XdrvMailbox.index = state;
+  XdrvCall(FUNC_LED_LINK);
+  XdrvMailbox.index = index;
+#endif  // ESP32
   int led_pin = Pin(GPIO_LEDLNK);
   uint32_t led_inv = TasmotaGlobal.ledlnk_inverted;
   if (-1 == led_pin) {                    // Legacy - LED1 is status
@@ -1993,10 +1998,12 @@ void GpioInit(void)
         ButtonInvertFlag(mpin - AGPIO(GPIO_KEY1_INV_PD));    //  0 .. 3
         mpin -= (AGPIO(GPIO_KEY1_INV_PD) - AGPIO(GPIO_KEY1));
       }
+#if defined(SOC_TOUCH_VERSION_1) || defined(SOC_TOUCH_VERSION_2)
       else if ((mpin >= AGPIO(GPIO_KEY1_TC)) && (mpin < (AGPIO(GPIO_KEY1_TC) + MAX_KEYS))) {
         ButtonTouchFlag(mpin - AGPIO(GPIO_KEY1_TC));  //  0 .. 3
         mpin -= (AGPIO(GPIO_KEY1_TC) - AGPIO(GPIO_KEY1));
       }
+#endif  // ESP32 SOC_TOUCH_VERSION_1 or SOC_TOUCH_VERSION_2
 #endif //ESP32
       else if ((mpin >= AGPIO(GPIO_REL1_INV)) && (mpin < (AGPIO(GPIO_REL1_INV) + MAX_RELAYS))) {
         bitSet(TasmotaGlobal.rel_inverted, mpin - AGPIO(GPIO_REL1_INV));

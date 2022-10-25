@@ -196,12 +196,14 @@ const uint8_t OTA_ATTEMPTS = 10;            // Number of times to try fetching t
 const uint8_t OTA_ATTEMPTS = 5;             // Number of times to try fetching the new firmware
 #endif  // ESP8266
 
-const uint16_t INPUT_BUFFER_SIZE = 520;     // Max number of characters in Tasmota serial command buffer
-const uint16_t MIN_INPUT_BUFFER_SIZE = 256;     // Max number of characters in Tasmota serial command buffer
+//const uint16_t INPUT_BUFFER_SIZE = 520;     // Max number of characters in Tasmota serial command buffer
+const uint16_t INPUT_BUFFER_SIZE = 800;     // Max number of characters in Tasmota serial command buffer
+const uint16_t MIN_INPUT_BUFFER_SIZE = 256;  // Max number of characters in Tasmota serial command buffer
 const uint16_t MAX_INPUT_BUFFER_SIZE = 2048; // Max number of characters in Arduino serial command buffer
 const uint16_t FLOATSZ = 16;                // Max number of characters in float result from dtostrfd (max 32)
 const uint16_t CMDSZ = 24;                  // Max number of characters in command
 const uint16_t TOPSZ = 151;                 // Max number of characters in topic string
+const uint16_t GUISZ = 300;                 // Max number of characters in WebEnergyFormat string
 
 #ifdef ESP8266
 #ifdef PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED
@@ -301,6 +303,7 @@ const uint32_t LOOP_SLEEP_DELAY = 50;       // Lowest number of milliseconds to 
 #define XPT2046_MAXX			3895
 #define XPT2046_MINY			346
 #define	XPT2046_MAXY			3870
+
 /*********************************************************************************************\
  * Enumeration
 \*********************************************************************************************/
@@ -379,7 +382,7 @@ enum XsnsFunctions {FUNC_SETTINGS_OVERRIDE, FUNC_PIN_STATE, FUNC_I2C_INIT, FUNC_
                     FUNC_SAVE_SETTINGS, FUNC_SAVE_AT_MIDNIGHT, FUNC_SAVE_BEFORE_RESTART,
                     FUNC_AFTER_TELEPERIOD, FUNC_JSON_APPEND, FUNC_WEB_SENSOR, FUNC_WEB_COL_SENSOR, FUNC_COMMAND, FUNC_COMMAND_SENSOR, FUNC_COMMAND_DRIVER,
                     FUNC_MQTT_SUBSCRIBE, FUNC_MQTT_INIT, FUNC_MQTT_DATA,
-                    FUNC_SET_POWER, FUNC_SET_DEVICE_POWER, FUNC_SHOW_SENSOR, FUNC_ANY_KEY,
+                    FUNC_SET_POWER, FUNC_SET_DEVICE_POWER, FUNC_SHOW_SENSOR, FUNC_ANY_KEY, FUNC_LED_LINK,
                     FUNC_ENERGY_EVERY_SECOND, FUNC_ENERGY_RESET,
                     FUNC_RULES_PROCESS, FUNC_TELEPERIOD_RULES_PROCESS, FUNC_SERIAL, FUNC_FREE_MEM, FUNC_BUTTON_PRESSED, FUNC_BUTTON_MULTI_PRESSED,
                     FUNC_WEB_ADD_BUTTON, FUNC_WEB_ADD_CONSOLE_BUTTON, FUNC_WEB_ADD_MANAGEMENT_BUTTON, FUNC_WEB_ADD_MAIN_BUTTON,

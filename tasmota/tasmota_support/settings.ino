@@ -856,6 +856,7 @@ void SettingsDefaultSet2(void) {
 #else
   Settings->config_version = 1;  // ESP32
 #endif  // CONFIG_IDF_TARGET_ESP32S3
+  Settings->webcam_clk = 20;
 #endif  // ESP32
 
   flag.stop_flash_rotate |= APP_FLASH_CYCLE;
@@ -976,6 +977,9 @@ void SettingsDefaultSet2(void) {
   flag.button_swap |= KEY_SWAP_DOUBLE_PRESS;
   flag.button_single |= KEY_ONLY_SINGLE_PRESS;
   Settings->param[P_HOLD_TIME] = KEY_HOLD_TIME;  // Default 4 seconds hold time
+#if defined(SOC_TOUCH_VERSION_1) || defined(SOC_TOUCH_VERSION_2)
+  Settings->touch_threshold = ESP32_TOUCH_THRESHOLD;
+#endif  // ESP32 SOC_TOUCH_VERSION_1 or SOC_TOUCH_VERSION_2
 
   // Switch
   for (uint32_t i = 0; i < MAX_SWITCHES_SET; i++) { Settings->switchmode[i] = SWITCH_MODE; }
@@ -1211,6 +1215,10 @@ void SettingsDefaultSet2(void) {
   Settings->longitude = (int)((double)LONGITUDE * 1000000);
   SettingsResetStd();
   SettingsResetDst();
+//  if (DAWN_NORMAL == SUNRISE_DAWN_ANGLE) { mbflag2.sunrise_dawn_angle |= 0; }
+  if (DAWN_CIVIL == SUNRISE_DAWN_ANGLE) { mbflag2.sunrise_dawn_angle |= 1; }
+  else if (DAWN_NAUTIC == SUNRISE_DAWN_ANGLE) { mbflag2.sunrise_dawn_angle |= 2; }
+  else if (DAWN_ASTRONOMIC == SUNRISE_DAWN_ANGLE) { mbflag2.sunrise_dawn_angle |= 3; }
 
   Settings->button_debounce = KEY_DEBOUNCE_TIME;
   Settings->switch_debounce = SWITCH_DEBOUNCE_TIME;
@@ -1257,6 +1265,7 @@ void SettingsDefaultSet2(void) {
   Settings->flag4 = flag4;
   Settings->flag5 = flag5;
   Settings->flag6 = flag6;
+  Settings->mbflag2 = mbflag2;
 }
 
 void SettingsDefaultSet3(void) {
@@ -1573,6 +1582,22 @@ void SettingsDelta(void) {
     if (Settings->version < 0x0C000204) {  // 12.0.2.4
       Settings->param[P_BISTABLE_PULSE] = APP_BISTABLE_PULSE;
     }
+#if defined(SOC_TOUCH_VERSION_1) || defined(SOC_TOUCH_VERSION_2)
+    if (Settings->version < 0x0C010103) {  // 12.1.1.3
+      Settings->touch_threshold = ESP32_TOUCH_THRESHOLD;
+    }
+#endif  // ESP32 SOC_TOUCH_VERSION_1 or SOC_TOUCH_VERSION_2
+    if (Settings->version < 0x0C010105) {  // 12.1.1.5
+ //  if (DAWN_NORMAL == SUNRISE_DAWN_ANGLE) { mbflag2.sunrise_dawn_angle = 0; }
+      if (DAWN_CIVIL == SUNRISE_DAWN_ANGLE) { Settings->mbflag2.sunrise_dawn_angle = 1; }
+      else if (DAWN_NAUTIC == SUNRISE_DAWN_ANGLE) { Settings->mbflag2.sunrise_dawn_angle = 2; }
+      else if (DAWN_ASTRONOMIC == SUNRISE_DAWN_ANGLE) { Settings->mbflag2.sunrise_dawn_angle = 3; }
+    }
+#ifdef ESP32
+    if (Settings->version < 0x0C010106) {  // 12.1.1.6
+      Settings->webcam_clk = 20;
+    }
+#endif  // ESP32
 
     Settings->version = VERSION;
     SettingsSave(1);
