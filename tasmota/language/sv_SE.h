@@ -511,6 +511,11 @@
 #define D_ZIGBEE_EEPROM_FOUND_AT_ADDRESS "ZBBridge EEPROM found at address"
 #define D_ZIGBEE_RANDOMIZING_ZBCONFIG "Randomizing Zigbee parameters, please check with 'ZbConfig'"
 
+// xdrv_89_dali.ino
+#define D_SENSOR_DALI_RX                  "Dali RX"
+#define D_SENSOR_DALI_TX                  "Dali TX"
+#define D_CONFIGURE_DALI                  "Config DALI"
+
 // xdrv_03_energy.ino
 #define D_ENERGY_TODAY "Energi idag"
 #define D_ENERGY_YESTERDAY "Energi igår"
@@ -795,6 +800,8 @@
 #define D_SENSOR_SM2135_DAT    "SM2135 Dat"
 #define D_SENSOR_SM2335_CLK    "SM2335 Clk"
 #define D_SENSOR_SM2335_DAT    "SM2335 Dat"
+#define D_SENSOR_BP1658CJ_CLK  "BP1658CJ Clk"
+#define D_SENSOR_BP1658CJ_DAT  "BP1658CJ Dat"
 #define D_SENSOR_BP5758D_CLK    "BP5758D Clk"
 #define D_SENSOR_BP5758D_DAT    "BP5758D Dat"
 #define D_SENSOR_DEEPSLEEP     "DeepSleep"
@@ -893,6 +900,11 @@
 #define D_GPIO_SHIFT595_RCLK   "74x595 RCLK"
 #define D_GPIO_SHIFT595_OE     "74x595 OE"
 #define D_GPIO_SHIFT595_SER    "74x595 SER"
+#define D_GPIO_DINGTIAN_CLK    "Dingtian CLK"
+#define D_GPIO_DINGTIAN_SDI    "Dingtian SDI"
+#define D_GPIO_DINGTIAN_Q7     "Dingtian Q7"
+#define D_GPIO_DINGTIAN_PL     "Dingtian PL"
+#define D_GPIO_DINGTIAN_RCK    "Dingtian RCK"
 #define D_SENSOR_CM11_TX       "CM110x TX"
 #define D_SENSOR_CM11_RX       "CM110x RX"
 #define D_SENSOR_FLOWRATEMETER "Flowrate"

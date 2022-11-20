@@ -3,15 +3,89 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased] - Development
 
-## [12.2.0.1]
+## [12.2.0.5]
+### Added
+- ESP32 DS18x20 parasitic power usage when defining W1_PARASITE_POWER (#17112)
+- Optional define ``SERIAL_BRIDGE_BUFFER_SIZE`` to set Serial Bridge internal buffer size (Default ESP8266 = 256, ESP32 = 800)
+- Command ``SSerialBuffer 256..SERIAL_BRIDGE_BUFFER_SIZE`` to change serial bridge rx buffer size (#17120)
+
+### Breaking Changed
+
+### Changed
+- Serial Bridge default internal serial rx buffer size from 64 to 256 (#17120)
+
+### Fixed
+- ModbusBridge baudrates over 76500 baud (#17106)
+
+### Removed
+
+## [12.2.0.4] 20221117
+### Added
+- Support for Plantower PMSx003T AQI models with temperature and humidity (#16971)
+- Support for Dingtian x595/x165 shift register based relay boards by Barbudor (#17032)
+- New ``FUNC_NETWORK_UP`` and ``FUNC_NETWORK_DOWN`` events
+- WS2812 and Light ArtNet DMX control over UDP port 6454 (#17059)
+- Command ``SwitchMode 16`` sending only MQTT message on inverted switch change (#17028)
+- Support for HMC5883L 3-Axis Digital Compass sensor by Andreas Achtzehn (#17069)
+- Berry add ``udp->close()`` method (#17094)
+- Command ``RgxClients`` for range extender clients list (#17048)
+- Command ``RgxPort [tcp|udp], gateway_port, client_mac, client_port`` for range extender port forwardings (#17092)
+
+### Changed
+- Reverted Flash Mode back from ``DIO`` to ``DOUT`` for ESP8266/ESP8285 (#17019)
+- ESP32 Framework (Core) from v2.0.5.2 to v2.0.5.3 (#17034)
+- TuyaMcu rewrite by btsimonh (#17051)
+- WS2812 sends signal to only ``Pixels`` leds instead of sending to 512 leds (#17055)
+- Zigbee improved Aqara plug support and completed cluster 0x0702 (#17073)
+- ESP32 LVGL library from v8.3.2 to v8.3.3 (no functional change)
+
+### Fixed
+- SenseAir S8 module detection (#17033)
+
+### Removed
+
+## [12.2.0.3] 20221109
+### Added
+- Support for BP1658CJ RGBCW led bulbs like Orein OS0100411267 by Cossid (#17011)
+
+### Breaking Changed
+- Redesign distance sensors VL53LXX, TOF10120, HRXL and DYP to use cm instead of mm (#17021)
+
+### Changed
+- Default Flash Mode changed from ``DOUT`` to ``DIO`` for ESP8266/ESP8285
+
+## [12.2.0.2] 20221107
+### Added
+- Support for Digital Addressable Lighting Interface (DALI) by Andrei Kazmirtsuk (#16938)
+- Support for two phase power calibration using commands ``PowerSet2``, ``VoltageSet2`` and ``CurrentSet2``
+- Support for NTAG2xx tags read and write on PN532 NFC reader (#16939)
+- Berry ``bytes().reverse()`` method (#16977)
+- ESP32 Support for DMX ArtNet Led matrix animations (#16984)
+- Command ``SetOption47 1..255`` to delay power on relay state in seconds reducing power surge. ``SO47 1`` delays until network connected. ``SO47 2`` delays until mqtt connected
+- ESP32 DMX ArtNet optimization to avoid any object allocation and avoid garbage collector pauses
+- Berry add ``dyn`` class
+
+### Changed
+- Move some persistent data (PowerLow)
+- ESP32 Framework (Core) from v2.0.5 to v2.0.5.2
+- ADE7953 monitoring from instant power to accumulated energy (#16941)
+
+### Fixed
+- Deduplicate code and fix %timer n% rule regression from v12.2.0 (#16914)
+- Serial initialization for baudrate and config (#16970)
+- ModbusBridge buffer overflow (#16979)
+- Default serial bridge configuration from 5N1 to 8N1 regression from v10.1.0.3
+
+### Removed
+- Define ``USE_PN532_DATA_RAW`` from NFC reader (#16939)
+
+## [12.2.0.1] 20221026
 ### Added
 - DS18x20 support on up to four GPIOs by md5sum-as (#16833)
 - Berry add `bytes().setbytes()` (#16892)
-- Support for Shelly Pro 1/2 (#16773)
+- Support for Shelly Pro 1/1PM and 2/2PM (#16773)
 - Add Zigbee router firmware for Sonoff ZBBridgePro (#16900)
-- Prepare for DMX Artnet support on ESP32
-
-### Breaking Changed
+- Prepare for DMX ArtNet support on ESP32
 
 ### Changed
 - DS18x20 ``DS18Alias`` to ``DS18Sens`` (#16833)
@@ -21,8 +95,6 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - BP5758D red channel corruption regression from v12.1.1.6 (#16850)
-
-### Removed
 
 ## [Released]
 

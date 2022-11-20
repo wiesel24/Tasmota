@@ -117,8 +117,14 @@ class Leds : Leds_ntv
   def dirty()
     self.call_native(5)
   end
-  def pixels_buffer()
-    return self.call_native(6)
+  def pixels_buffer(old_buf)
+    var buf = self.call_native(6)   # address of buffer in memory
+    if old_buf == nil
+      return bytes(buf, self.pixel_size() * self.pixel_count())
+    else
+      old_buf._change_buffer(buf)
+      return old_buf
+    end
   end
   def pixel_size()
     return self.call_native(7)
@@ -275,7 +281,7 @@ class Leds : Leds_ntv
         # don't trigger on segment, you will need to trigger on full strip instead
         if bool(force) || (self.offset == 0 && self.w * self.h == self.strip.leds)
           self.strip.show()
-          self.pix_buffer = self.strip.pixels_buffer()  # update buffer after show()
+          self.pix_buffer = self.strip.pixels_buffer(self.pix_buffer)  # update buffer after show()
         end
       end
       def can_show()
@@ -312,10 +318,11 @@ class Leds : Leds_ntv
 
       # setbytes(row, bytes)
       # sets the raw bytes for `row`, copying at most 3 or 4 x col  bytes
-      def set_bytes(row, buf, offset)
+      def set_bytes(row, buf, offset, len)
         var h_bytes = self.h * self.pix_size
+        if (len > h_bytes)  len = h_bytes end
         var offset_in_matrix = self.offset + row * h_bytes
-        self.pix_buffer.setbytes(offset_in_matrix, buf, offset, h_bytes)
+        self.pix_buffer.setbytes(offset_in_matrix, buf, offset, len)
       end
 
       # Leds_matrix specific
