@@ -109,6 +109,7 @@ The latter links can be used for OTA upgrades too like ``OtaUrl http://ota.tasmo
 
 ## Changelog v12.2.0.5
 ### Added
+- Command ``SetOption35 0..255`` to skip number of received messages in Serial Bridge (default 0) [#17140](https://github.com/arendst/Tasmota/issues/17140)
 - Command ``SetOption47 1..255`` to delay power on relay state in seconds reducing power surge. ``SO47 1`` delays until network connected. ``SO47 2`` delays until mqtt connected
 - Command ``RgxClients`` for range extender clients list [#17048](https://github.com/arendst/Tasmota/issues/17048)
 - Command ``RgxPort [tcp|udp], gateway_port, client_mac, client_port`` for range extender port forwardings [#17092](https://github.com/arendst/Tasmota/issues/17092)
@@ -126,6 +127,7 @@ The latter links can be used for OTA upgrades too like ``OtaUrl http://ota.tasmo
 - Support for Dingtian x595 shift register based relay boards by Barbudor [#17032](https://github.com/arendst/Tasmota/issues/17032)
 - Support for HMC5883L 3-Axis Digital Compass sensor by Andreas Achtzehn [#17069](https://github.com/arendst/Tasmota/issues/17069)
 - WS2812 and Light ArtNet DMX control over UDP port 6454 [#17059](https://github.com/arendst/Tasmota/issues/17059)
+- Teleinfo TEMPO (BBR) contract [#17160](https://github.com/arendst/Tasmota/issues/17160)
 - Berry ``bytes().setbytes()`` method [#16892](https://github.com/arendst/Tasmota/issues/16892)
 - Berry ``bytes().reverse()`` method [#16977](https://github.com/arendst/Tasmota/issues/16977)
 - Zigbee router firmware for Sonoff ZBBridgePro [#16900](https://github.com/arendst/Tasmota/issues/16900)
@@ -145,6 +147,7 @@ The latter links can be used for OTA upgrades too like ``OtaUrl http://ota.tasmo
 - ADE7953 monitoring from instant power to accumulated energy [#16941](https://github.com/arendst/Tasmota/issues/16941)
 - TuyaMcu rewrite by btsimonh [#17051](https://github.com/arendst/Tasmota/issues/17051)
 - WS2812 sends signal to only ``Pixels`` leds instead of sending to 512 leds [#17055](https://github.com/arendst/Tasmota/issues/17055)
+- AC PWM dimmer lineair power distribution [#17177](https://github.com/arendst/Tasmota/issues/17177)
 - Zigbee improved Aqara plug support and completed cluster 0x0702 [#17073](https://github.com/arendst/Tasmota/issues/17073)
 
 ### Fixed
