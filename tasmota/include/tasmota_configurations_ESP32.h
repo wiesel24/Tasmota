@@ -283,9 +283,9 @@
 #undef FALLBACK_MODULE
 #define FALLBACK_MODULE        WEMOS             // [Module2] Select default module on fast reboot where USER_MODULE is user template
 
-#define USE_INFLUXDB                             // Enable influxdb support (+5k code)
-#define USE_TASMOTA_DISCOVERY
+//#define USE_INFLUXDB                             // Enable influxdb support (+5k code)
 #undef USE_HOME_ASSISTANT
+#define USE_TASMOTA_DISCOVERY
 
 // #define USE_SDCARD
 
@@ -294,8 +294,7 @@
 #define USE_BLE_ESP32                            // Enable new BLE driver
 #define USE_EQ3_ESP32
 #define USE_MI_ESP32                             // (ESP32 only) Add support for ESP32 as a BLE-bridge (+9k2 mem, +292k flash)
-#define USE_MI_EXT_GUI                         //enable dashboard style GUI
-#undef  USE_RC_SWITCH 
+#define  USE_RC_SWITCH 
 #define USE_SMARTRC_RCS
 
 
