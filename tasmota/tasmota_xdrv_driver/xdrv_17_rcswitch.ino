@@ -45,6 +45,10 @@ void (* const RfCommands[])(void) PROGMEM = {
 #ifdef USE_SMARTRC_RCS
   #include <ELECHOUSE_CC1101_SRC_DRV.h>
   #warning ****  USE_SMARTRC_RCS - hardcoded PINS****
+  #ifdef RCSWITCH_MAX_CHANGES
+    #undef RCSWITCH_MAX_CHANGES
+    #define RCSWITCH_MAX_CHANGES 160
+  #endif
 #endif
 RCSwitch mySwitch = RCSwitch();
 
