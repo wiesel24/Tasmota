@@ -3,20 +3,39 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased] - Development
 
-## [12.3.1.1] 20221216
+## [12.3.1.2]
 ### Added
-- Support for IPv6 DNS records (AAAA) and IPv6 ``Ping`` for ESP32 and ESP8266 (#17417)
-- Berry support for ``crypto.SHA256`` (#17430)
-- Support for RGB displays (#17414)
+- Berry crypto add ``EC_P256`` and ``PBKDF2_HMAC_SHA256`` algorithms required by Matter protocol
+- Berry crypto add ``random`` to generate series of random bytes
+- Berry crypto add ``HKDF_HMAC_SHA256``
+- Support for up to 3 single phase modbus energy monitoring device using generic Energy Modbus driver
+- Berry crypto add ``SPAKE2P_Matter`` for Matter support
+- Support for IPv6 only networks on Ethernet (not yet Wifi)
 
 ### Breaking Changed
 
 ### Changed
-- ESP32 Framework (Core) from v2.0.5.3 to v2.0.5.4 (IPv6 support)
+- ESP32 Framework (Core) from v2.0.5.4 to v2.0.6 (IPv6 support)
+- Tasmota OTA scripts now support both unzipped and gzipped file uploads (#17378)
+- Change NTP default servers to dual-stack (IPv4/IPv6)
 
 ### Fixed
+- Shutter default motorstop set to 0 (#17403)
+- Shutter default tilt configuration (#17484)
+- Modbus transmit enable GPIO enabled once during write buffer
+- ESP8266 set GPIO's to input on power on fixing relay spikes (#17531)
 
 ### Removed
+
+## [12.3.1.1] 20221221
+### Added
+- Support for IPv6 DNS records (AAAA) and IPv6 ``Ping`` for ESP32 and ESP8266 (#17417)
+- Berry support for ``crypto.SHA256`` (#17430)
+- Support for RGB displays (#17414)
+- Berry add crypto AES_CTR, HDMAC_SHA256, MD5
+
+### Changed
+- ESP32 Framework (Core) from v2.0.5.3 to v2.0.5.4 (IPv6 support)
 
 ## [Released]
 
