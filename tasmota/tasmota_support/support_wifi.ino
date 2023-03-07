@@ -461,35 +461,35 @@ void WifiSetState(uint8_t state)
 
 /*****************************************************************************************************\
  * IP detection revised for full IPv4 / IPv6 support
- * 
+ *
  * In general, each interface (Wifi/Eth) can have 1x IPv4 and
  * 2x IPv6 (Global routable address and Link-Local starting witn fe80:...)
- * 
+ *
  * We always use an IPv4 address if one is assigned, and revert to
  * IPv6 only on networks that are v6 only.
  * Ethernet calls can be safely used even if the USE_ETHERNET is not enabled
- * 
+ *
  * New APIs:
  * - general form is:
  *   `bool XXXGetIPYYY(IPAddress*)` returns `true` if the address exists and copies the address
  *                                  if the pointer is non-null.
  *   `bool XXXHasIPYYY()`           same as above but only returns `true` or `false`
  *   `String XXXGetIPYYYStr()`      returns the IP as a `String` or empty `String` if none
- * 
+ *
  *   `XXX` can be `Wifi` or `Eth`
  *   `YYY` can be `` for any address, `v6` for IPv6 global address or `v6LinkLocal` for Link-local
- * 
+ *
  * - Legacy `Wifi.localIP()` and `ETH.localIP()` always return IPv4 and nothing on IPv6 only networks
  *
  * - v4/v6:
  *   `WifiGetIP`, `WifiGetIPStr`, `WifiHasIP`: get preferred v4/v6 address for Wifi
  *   `EthernetGetIP`, `EthernetGetIPStr`, `EthernetHasIP`: get preferred v4/v6 for Ethernet
- * 
+ *
  * - Main IP to be used dual stack v4/v6
  *   `hasIP`, `IPGetListeningAddress`, `IPGetListeningAddressStr`: any IP to listen to for Web Server
  *             IPv4 is always preferred, and Eth is preferred over Wifi.
  *   `IPForUrl`: converts v4/v6 to use in URL, enclosing v6 in []
- * 
+ *
  * - v6 only:
  *    `WifiGetIPv6`, `WifiGetIPv6Str`, `WifiHasIPv6`
  *    `WifiGetIPv6LinkLocal`, `WifiGetIPv6LinkLocalStr`
@@ -499,7 +499,7 @@ void WifiSetState(uint8_t state)
  * - v4 only:
  *    `WifiGetIPv4`, `WifiGetIPv4Str`, `WifiHasIPv4`
  *    `EthernetGetIPv4`, `EthernetGetIPv4Str`, `EthernetHasIPv4`
- * 
+ *
  * - DNS reporting actual values used (not the Settings):
  *    `DNSGetIP(n)`, `DNSGetIPStr(n)` with n=`0`/`1` (same dns for Wifi and Eth)
 \*****************************************************************************************************/
@@ -639,7 +639,7 @@ bool DNSGetIP(IPAddress *ip, uint32_t idx)
     if (ip != nullptr) { *ip = *ip_dns; }
     return true;
   }
-  *ip = *IP4_ADDR_ANY;
+  if (ip != nullptr) { *ip = *IP4_ADDR_ANY; }
   return false;
 }
 String DNSGetIPStr(uint32_t idx)
@@ -648,7 +648,7 @@ String DNSGetIPStr(uint32_t idx)
   return DNSGetIP(&ip, idx) ? ip.toString() : String(F("0.0.0.0"));
 }
 
-// 
+//
 #include "lwip/dns.h"
 void WifiDumpAddressesIPv6(void)
 {
@@ -756,23 +756,23 @@ String IPForUrl(const IPAddress & ip)
 // IPv4 has always priority
 // Copy the value of the IP if pointer provided (optional)
 bool WifiGetIP(IPAddress *ip) {
-#ifdef USE_IPV6
   if ((uint32_t)WiFi.localIP() != 0) {
     if (ip != nullptr) { *ip = WiFi.localIP(); }
     return true;
   }
+  if ((uint32_t)WiFi.softAPIP() != 0) {
+    if (ip != nullptr) { *ip = WiFi.softAPIP(); }
+    return true;
+  }
+#ifdef USE_IPV6
   IPAddress lip;
   if (WifiGetIPv6(&lip)) {
     if (ip != nullptr) { *ip = lip; }
     return true;
   }
   if (ip != nullptr) { *ip = IPAddress(); }
-  return false;
-#else
-  // IPv4 only
-  if (ip != nullptr) { *ip = WiFi.localIP(); }
-  return (uint32_t)WiFi.localIP() != 0;
 #endif // USE_IPV6
+  return false;
 }
 
 bool WifiHasIP(void) {
@@ -1254,13 +1254,14 @@ uint64_t WifiGetNtp(void) {
 
   IPAddress time_server_ip;
 
-  char fallback_ntp_server[16];
-  snprintf_P(fallback_ntp_server, sizeof(fallback_ntp_server), PSTR("%d.pool.ntp.org"), random(0,3));
+  char fallback_ntp_server[2][32];
+  ext_snprintf_P(fallback_ntp_server[0], sizeof(fallback_ntp_server[0]), PSTR("%_I"), Settings->ipv4_address[1]);  // #17984
+  ext_snprintf_P(fallback_ntp_server[1], sizeof(fallback_ntp_server[1]), PSTR("%d.pool.ntp.org"), random(0,3));
 
   char* ntp_server;
-  for (uint32_t i = 0; i <= MAX_NTP_SERVERS; i++) {
-    if (ntp_server_id > MAX_NTP_SERVERS) { ntp_server_id = 0; }
-    ntp_server = (ntp_server_id < MAX_NTP_SERVERS) ? SettingsText(SET_NTPSERVER1 + ntp_server_id) : fallback_ntp_server;
+  for (uint32_t i = 0; i < MAX_NTP_SERVERS +2; i++) {
+    if (ntp_server_id >= MAX_NTP_SERVERS +2) { ntp_server_id = 0; }
+    ntp_server = (ntp_server_id < MAX_NTP_SERVERS) ? SettingsText(SET_NTPSERVER1 + ntp_server_id) : fallback_ntp_server[ntp_server_id - MAX_NTP_SERVERS];
     if (strlen(ntp_server)) {
       break;
     }

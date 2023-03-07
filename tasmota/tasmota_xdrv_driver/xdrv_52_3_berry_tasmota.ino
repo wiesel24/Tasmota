@@ -158,7 +158,15 @@ extern "C" {
     be_raise(vm, kTypeError, nullptr);
   }
 
-  // Berry: tasmota.time_reached(timer:int) -> bool
+  // Berry: tasmota.locale() -> string
+  //
+  int32_t l_locale(struct bvm *vm);
+  int32_t l_locale(struct bvm *vm) {
+    be_pushstring(vm, D_HTML_LANGUAGE);
+    be_return(vm);
+  }
+
+  // Berry: tasmota.rtc() -> map
   //
   int32_t l_rtc(struct bvm *vm);
   int32_t l_rtc(struct bvm *vm) {
@@ -211,6 +219,8 @@ extern "C" {
     int32_t top = be_top(vm); // Get the number of arguments
     if (top == 1) {  // no argument (instance only)
       be_newobject(vm, "map");
+      be_map_insert_str(vm, "mac", WiFi.macAddress().c_str());
+      be_map_insert_bool(vm, "up", WifiHasIP());
       if (Settings->flag4.network_wifi) {
         int32_t rssi = WiFi.RSSI();
         bool show_rssi = false;
@@ -227,7 +237,6 @@ extern "C" {
         }
 #endif // USE_IPV6
         if (static_cast<uint32_t>(WiFi.localIP()) != 0) {
-          be_map_insert_str(vm, "mac", WiFi.macAddress().c_str());
           be_map_insert_str(vm, "ip", IPAddress((uint32_t)WiFi.localIP()).toString().c_str());   // quick fix for IPAddress bug
           show_rssi = true;
         }
@@ -250,8 +259,12 @@ extern "C" {
     if (top == 1) {  // no argument (instance only)
       be_newobject(vm, "map");
 #ifdef USE_ETHERNET
+      be_map_insert_bool(vm, "up", EthernetHasIP());
+      String eth_mac = EthernetMacAddress().c_str();
+      if (eth_mac != "00:00:00:00:00:00") {
+        be_map_insert_str(vm, "mac", eth_mac.c_str());
+      }
       if (static_cast<uint32_t>(EthernetLocalIP()) != 0) {
-        be_map_insert_str(vm, "mac", EthernetMacAddress().c_str());
         be_map_insert_str(vm, "ip", IPAddress((uint32_t)EthernetLocalIP()).toString().c_str());   // quick fix for IPAddress bug
       }
 #ifdef USE_IPV6
@@ -264,6 +277,8 @@ extern "C" {
         be_map_insert_str(vm, "ip6local", ipv6_addr.c_str());
       }
 #endif // USE_IPV6
+#else // USE_ETHERNET
+      be_map_insert_bool(vm, "up", bfalse);
 #endif // USE_ETHERNET
       be_pop(vm, 1);
       be_return(vm);
@@ -438,9 +453,7 @@ extern "C" {
   }
 
   // Find for an operator in the string
-  // takes a string, an offset to start the search from, and works in 2 modes.
-  // mode1 (false): loog for the first char of an operato
-  // mode2 (true): finds the last char of the operator
+  // returns -1 if not found, or returns start in low 16 bits, end in high 16 bits
   int32_t tasm_find_op(bvm *vm);
   int32_t tasm_find_op(bvm *vm) {
     int32_t top = be_top(vm); // Get the number of arguments
@@ -448,48 +461,52 @@ extern "C" {
     int32_t ret = -1;
     if (top >= 2 && be_isstring(vm, 2)) {
       const char *c = be_tostring(vm, 2);
-      if (top >= 3) {
-        second_phase = be_tobool(vm, 3);
-      }
+      // new version, two phases in 1, return start in low 16 bits, end in high 16 bits
 
-      if (!second_phase) {
-        int32_t idx = 0;
-        // search for `=`, `==`, `!=`, `!==`, `<`, `<=`, `>`, `>=`
-        while (*c && ret < 0) {
-          switch (c[0]) {
-            case '=':
-            case '<':
-            case '>':
-              ret = idx;
-              break;   // anything starting with `=`, `<` or `>` is a valid operator
-            case '!':
-              if (c[1] == '=') {
-                ret = idx; // needs to start with `!=`
-              }
-              break;
-            default:
-              break;
-          }
-          c++;
-          idx++;
+      int32_t idx_start = -1;
+      int32_t idx = 0;
+      // search for `=`, `==`, `!=`, `!==`, `<`, `<=`, `>`, `>=`
+      while (*c && idx_start < 0) {
+        switch (c[0]) {
+          case '=':
+          case '<':
+          case '>':
+            idx_start = idx;
+            break;   // anything starting with `=`, `<` or `>` is a valid operator
+          case '!':
+            if (c[1] == '=') {
+              idx_start = idx; // needs to start with `!=`
+            }
+            break;
+          default:
+            break;
         }
-      } else {
+        c++;
+        idx++;
+      }
+      int idx_end = -1; 
+      if (idx_start >= 0) {
+        idx_end = idx_start;
         // second phase
         switch (c[0]) {
           case '<':
           case '>':
           case '=':
-            if (c[1] != '=') { ret = 1; }    // `<` or `>` or `=`
-            else             { ret = 2; }    // `<=` or `>=` or `==`
+            if (c[1] != '=') { idx_end += 1; }    // `<` or `>` or `=`
+            else             { idx_end += 2; }    // `<=` or `>=` or `==`
             break;
           case '!':
             if (c[1] != '=') { ; }         // this is invalid if isolated `!`
-            if (c[2] != '=') { ret = 2; }    // `!=`
-            else             { ret = 3; }    // `!==`
+            if (c[2] != '=') { idx_end += 2; }    // `!=`
+            else             { idx_end += 3; }    // `!==`
             break;
           default:
             break;
         }
+      }
+
+      if (idx_start >= 0 && idx_end >= idx_start) {
+        ret = ((idx_end & 0x7FFF) << 16) | (idx_start & 0x7FFF);
       }
     }
     be_pushint(vm, ret);
@@ -497,11 +514,11 @@ extern "C" {
   }
   /*
 
-  # test patterns
-  assert(tasmota._find_op("aaa#bbc==23",false) == 7)
-  assert(tasmota._find_op("==23",true) == 2)
-  assert(tasmota._find_op(">23",true) == 1)
-  assert(tasmota._find_op("aaa#bbc!23",false) == -1)
+  # test patterns for all-in-one version
+  assert(tasmota._find_op("aaa#bbc==23") == 0x80007)
+  assert(tasmota._find_op("az==23") == 0x30002)
+  assert(tasmota._find_op("a>23") == 0x10001)
+  assert(tasmota._find_op("aaa#bbc!23") == -1)
 
   */
 
@@ -571,9 +588,9 @@ extern "C" {
   int32_t l_getswitch(bvm *vm);
   int32_t l_getswitch(bvm *vm) {
     be_newobject(vm, "list");
-    for (uint32_t i = 0; i < MAX_SWITCHES; i++) {
-      if (PinUsed(GPIO_SWT1, i)) {
-        be_pushbool(vm, Switch.virtual_state[i] == PRESSED);
+    for (uint32_t i = 0; i < MAX_SWITCHES_SET; i++) {
+      if (SwitchUsed(i)) {
+        be_pushbool(vm, SwitchGetState(i) == PRESSED);
         be_data_push(vm, -2);
         be_pop(vm, 1);
       }
